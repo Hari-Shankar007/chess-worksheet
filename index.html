@@ -1176,6 +1176,9 @@ document.getElementById('logo-file').addEventListener('change', e => {
 switchTab('lichess');
 updateDiffTotal();
 buildEmptyState(document.getElementById('sheets-wrap'));
+  document.getElementById('tab-lichess').addEventListener('click', () => switchTab('lichess'));
+document.getElementById('tab-manual').addEventListener('click', () => switchTab('manual'));
+document.getElementById('fetch-btn').addEventListener('click', fetchFromLichess);
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script> </body>
 </html>
