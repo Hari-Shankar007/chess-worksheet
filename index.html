@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Chess Puzzle Worksheet Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:           #0d0f14;
+  --surface:      #13161e;
+  --surface2:     #1a1e28;
+  --border:       #252b3a;
+  --border-light: #2e3649;
+  --gold:         #c9a84c;
+  --gold-dim:     #7d6830;
+  --gold-glow:    rgba(201,168,76,0.12);
+  --text:         #e8e4d9;
+  --text-muted:   #6b7285;
+  --text-dim:     #9aa0b0;
+  --red:          #c0392b;
+  --green:        #27ae60;
+
+  --ws-bg:        #f8f6f0;
+  --ws-surface:   #ffffff;
+  --ws-border:    #d8d0c0;
+  --ws-text:      #1a1a1a;
+  --ws-muted:     #888;
+  --ws-rule:      #e0d8cc;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+#app { display: flex; height: 100vh; }
+
+/* ── SIDEBAR ── */
+#sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+
+.brand-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--gold) 0%, #8a6420 100%);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(201,168,76,0.25);
+}
+
+.brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px; font-weight: 700; color: var(--text);
+  letter-spacing: 0.02em; line-height: 1.2;
+}
+
+.brand-tagline {
+  font-size: 10px; color: var(--text-muted);
+  letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px;
+}
+
+.sidebar-body {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 14px;
+  scrollbar-width: thin; scrollbar-color: var(--border-light) transparent;
+}
+.sidebar-body::-webkit-scrollbar { width: 4px; }
+.sidebar-body::-webkit-scrollbar-track { background: transparent; }
+.sidebar-body::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+.sidebar-footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+}
+
+.s-group { display: flex; flex-direction: column; gap: 10px; }
+.s-divider { height: 1px; background: var(--border); flex-shrink: 0; }
+
+.s-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;
+}
+
+.s-field { display: flex; flex-direction: column; }
+
+.s-input {
+  width: 100%; padding: 8px 11px;
+  background: var(--surface2);
+  border: 1px solid var(--border-light);
+  border-radius: 7px; color: var(--text);
+  font-size: 12px; font-family: 'DM Sans', sans-serif;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none; appearance: none;
+}
+.s-input:focus { border-color: var(--gold-dim); box-shadow: 0 0 0 3px var(--gold-glow); }
+.s-input::placeholder { color: var(--text-muted); }
+
+select.s-input {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7285' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
+}
+
+textarea.s-input {
+  resize: vertical; min-height: 70px;
+  font-family: 'DM Mono', monospace; font-size: 11px; line-height: 1.7;
+}
+
+.s-inline { display: flex; gap: 8px; }
+.s-inline .s-field { flex: 1; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 14px; border: none; border-radius: 8px; cursor: pointer;
+  font-size: 12px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.03em; transition: all 0.15s; outline: none;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold) 0%, #a07830 100%);
+  color: #0d0f14; box-shadow: 0 2px 12px rgba(201,168,76,0.3);
+}
+.btn-gold:hover { box-shadow: 0 4px 18px rgba(201,168,76,0.45); transform: translateY(-1px); }
+.btn-gold:active { transform: translateY(0); }
+.btn-gold:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-outline { background: transparent; border: 1px solid var(--border-light); color: var(--text-dim); }
+.btn-outline:hover { border-color: var(--gold-dim); color: var(--gold); background: var(--gold-glow); }
+.btn-outline:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-ghost {
+  background: transparent; border: 1px solid rgba(192,57,43,0.35);
+  color: #e74c3c; font-size: 11px; padding: 7px 12px;
+}
+.btn-ghost:hover { background: rgba(192,57,43,0.1); }
+
+.btn-full { width: 100%; }
+.btn-row { display: flex; gap: 8px; }
+.btn-row .btn { flex: 1; }
+
+/* ── FILE UPLOAD ── */
+.upload-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 12px; background: var(--surface2);
+  border: 1px dashed var(--border-light); border-radius: 7px;
+  cursor: pointer; font-size: 11px; font-weight: 500; color: var(--text-muted);
+  transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.upload-btn:hover { border-color: var(--gold-dim); color: var(--gold); background: var(--gold-glow); }
+
+.logo-preview { display: flex; align-items: center; gap: 8px; }
+.logo-thumb {
+  width: 38px; height: 38px; border-radius: 6px;
+  border: 1px solid var(--border-light); object-fit: contain;
+  display: none; flex-shrink: 0;
+}
+
+/* ── SOURCE TABS ── */
+.source-tabs {
+  display: flex; gap: 4px; padding: 2px;
+  background: var(--surface2); border-radius: 8px; border: 1px solid var(--border);
+}
+.source-tab {
+  flex: 1; padding: 6px 8px; border: none; background: transparent;
+  color: var(--text-muted); font-size: 11px; font-weight: 500;
+  border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+}
+.source-tab.active { background: var(--gold); color: #0d0f14; font-weight: 600; }
+
+/* ── DIFFICULTY CONTROLS ── */
+.diff-controls { display: flex; flex-direction: column; gap: 8px; }
+.diff-row { display: flex; align-items: center; gap: 8px; }
+.diff-color-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-easy   { background: #4caf50; }
+.dot-medium { background: #ff9800; }
+.dot-hard   { background: #f44336; }
+.diff-label { font-size: 11px; color: var(--text-dim); width: 52px; flex-shrink: 0; }
+.diff-num {
+  width: 60px; padding: 6px 8px; text-align: center;
+  background: var(--surface2); border: 1px solid var(--border-light);
+  border-radius: 6px; color: var(--text); font-size: 12px;
+  font-family: 'DM Sans', sans-serif; outline: none;
+}
+.diff-num:focus { border-color: var(--gold-dim); box-shadow: 0 0 0 3px var(--gold-glow); }
+.diff-total { font-size: 10px; color: var(--text-muted); text-align: right; }
+
+.rating-range-display {
+  font-size: 10px; color: var(--gold); letter-spacing: 0.04em;
+  padding: 5px 10px; background: var(--gold-glow);
+  border: 1px solid var(--gold-dim); border-radius: 6px; text-align: center; line-height: 1.7;
+}
+
+/* ── FETCH PROGRESS ── */
+.fetch-progress {
+  padding: 10px 14px; background: var(--surface2);
+  border: 1px solid var(--border-light); border-radius: 8px;
+  font-size: 11px; color: var(--text-dim); display: none;
+}
+.fetch-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.fetch-bar { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.4s ease; }
+
+.fen-count-badge {
+  background: var(--gold-glow); border: 1px solid var(--gold-dim);
+  color: var(--gold); font-size: 10px; font-weight: 700;
+  padding: 1px 7px; border-radius: 20px;
+}
+
+/* ── MAIN AREA ── */
+#main { flex: 1; background: var(--bg); overflow-y: auto; position: relative; }
+#main::before {
+  content: ''; position: fixed; top: 0; left: 300px; right: 0; bottom: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px),
+                    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px; opacity: 0.3; pointer-events: none;
+}
+.main-inner { position: relative; z-index: 1; padding: 20px 24px; min-height: 100%; }
+
+/* ── SHEET TABS ── */
+.sheet-nav {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+}
+.sheet-tab {
+  padding: 5px 14px; border: 1px solid var(--border-light); border-radius: 20px;
+  cursor: pointer; font-size: 11px; font-weight: 500; background: var(--surface);
+  color: var(--text-muted); transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.sheet-tab.active { background: var(--gold); color: #0d0f14; border-color: var(--gold); font-weight: 600; }
+.sheet-tab:hover:not(.active) { border-color: var(--gold-dim); color: var(--text); }
+.nav-print-btn {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 14px; background: var(--surface); border: 1px solid var(--border-light);
+  border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600;
+  color: var(--text-dim); transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.nav-print-btn:hover { border-color: var(--gold-dim); color: var(--gold); background: var(--gold-glow); }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: calc(100vh - 100px); gap: 16px; color: var(--text-muted);
+}
+.empty-board {
+  display: grid; grid-template-columns: repeat(8, 28px); grid-template-rows: repeat(8, 28px);
+  border: 1px solid var(--border-light); border-radius: 4px; overflow: hidden; opacity: 0.35;
+}
+.empty-board-sq { width: 28px; height: 28px; }
+.empty-title { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--text-dim); text-align: center; }
+.empty-sub { font-size: 12px; color: var(--text-muted); text-align: center; max-width: 320px; line-height: 1.6; }
+
+/* ── WORKSHEET PAGE ── */
+.worksheet-page {
+  background: var(--ws-bg); border: 1px solid var(--ws-border); border-radius: 12px;
+  padding: 28px 24px 22px; max-width: 980px; margin: 0 auto 28px;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.5); animation: pageIn 0.25s ease;
+}
+@keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding-bottom: 14px; border-bottom: 2px solid var(--ws-rule); margin-bottom: 20px;
+}
+.hdr-logo-ph {
+  width: 54px; height: 54px; border: 1.5px dashed #c8bfa8; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 600; letter-spacing: 0.1em; color: #bbb;
+  text-transform: uppercase; flex-shrink: 0;
+}
+.hdr-logo { width: 54px; height: 54px; object-fit: contain; border: 1px solid var(--ws-border); border-radius: 8px; display: none; flex-shrink: 0; }
+.hdr-center { flex: 1; }
+.hdr-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--ws-text); line-height: 1.2; margin-bottom: 3px; }
+.hdr-sub { font-size: 11px; color: var(--ws-muted); line-height: 1.5; }
+.hdr-right { text-align: right; font-size: 12px; color: #555; white-space: nowrap; }
+.hdr-contact { font-size: 13px; font-weight: 600; color: var(--ws-text); margin-bottom: 2px; }
+.hdr-sheet-num { font-size: 10px; color: var(--ws-muted); }
+
+/* ── PUZZLE GRID ── */
+.puzzles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+
+/* ── PUZZLE CARD ── */
+.puzzle-card {
+  display: flex; flex-direction: column; background: #fff;
+  border: 1px solid var(--ws-border); border-radius: 10px; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.puzzle-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px 6px; background: #f4f0e8; border-bottom: 1px solid var(--ws-rule);
+}
+.puzzle-num-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: #555; text-transform: uppercase; font-family: 'DM Sans', sans-serif; }
+.puzzle-card-header-right { display: flex; align-items: center; gap: 6px; }
+
+.diff-badge {
+  font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+.diff-easy   { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+.diff-medium { background: #fff8e1; color: #e65100; border: 1px solid #ffe082; }
+.diff-hard   { background: #fce4ec; color: #b71c1c; border: 1px solid #f48fb1; }
+
+.flip-btn {
+  font-size: 10px; padding: 2px 7px; border: 1px solid #c8bfa8; border-radius: 4px;
+  background: transparent; color: #888; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.12s;
+}
+.flip-btn:hover { border-color: #8a6c2a; color: #8a6c2a; background: #f9f3e5; }
+
+.board-wrap { width: 100%; aspect-ratio: 1; background: #ccc; }
+canvas.brd { width: 100%; height: 100%; display: block; }
+
+.turn-bar {
+  padding: 6px 10px; text-align: center; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; cursor: pointer; user-select: none; transition: all 0.15s;
+  border-top: 1px solid var(--ws-rule);
+}
+.turn-bar.white { background: #f0ede5; color: #333; }
+.turn-bar.black { background: #2a2a3a; color: #e8e8e8; }
+.turn-bar:hover { opacity: 0.85; }
+
+.puzzle-card-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #fff; }
+
+.answer-row { display: flex; flex-direction: column; gap: 3px; }
+.field-label { font-size: 8.5px; font-weight: 700; letter-spacing: 0.1em; color: #888; text-transform: uppercase; font-family: 'DM Sans', sans-serif; }
+.answer-field {
+  width: 100%; border: none; border-bottom: 1.5px solid #aaa; background: transparent;
+  color: var(--ws-text); font-family: 'DM Sans', sans-serif; font-size: 12px;
+  padding: 4px 2px; outline: none; min-height: 28px;
+}
+.answer-field::placeholder { color: #ccc; font-size: 10px; }
+.answer-field:focus { border-bottom-color: #8a6c2a; }
+
+.notes-section { display: flex; flex-direction: column; gap: 3px; }
+.notes-textarea {
+  width: 100%; background: transparent; border: none; outline: none;
+  color: var(--ws-text); font-family: 'DM Sans', sans-serif; font-size: 11px;
+  line-height: 20px; resize: none; padding: 0 2px; overflow: hidden;
+  background-image: repeating-linear-gradient(
+    to bottom, transparent 0px, transparent 18px,
+    rgba(0,0,0,0.12) 18px, rgba(0,0,0,0.12) 19.5px
+  );
+  background-size: 100% 20px; background-position: 0 1px;
+}
+.notes-textarea::placeholder { color: #ccc; font-size: 10px; }
+
+.status-hint {
+  font-size: 10px; color: var(--text-muted); line-height: 1.6;
+  padding: 10px 0 0; border-top: 1px solid var(--border);
+}
+
+/* ── PRINT ── */
+@media print {
+  @page { size: A4 portrait; margin: 8mm; }
+  body { overflow: visible !important; }
+  #sidebar, .sheet-nav { display: none !important; }
+  #app { display: block !important; height: auto !important; }
+  #main { overflow: visible !important; padding: 0 !important; }
+  #main::before { display: none !important; }
+  .main-inner { padding: 0 !important; }
+
+  .worksheet-page {
+    border: none !important; border-radius: 0 !important; box-shadow: none !important;
+    margin: 0 !important; padding: 7px 8px 5px !important;
+    page-break-after: always; page-break-inside: avoid;
+    max-width: 100% !important; width: 100% !important; display: block !important;
+    background: #fff !important; height: 281mm; overflow: hidden; animation: none !important;
+  }
+  .worksheet-page:last-child { page-break-after: auto !important; }
+
+  .page-header { border-bottom: 1.5px solid #bbb !important; padding-bottom: 7px !important; margin-bottom: 10px !important; }
+  .hdr-title { font-size: 15px !important; color: #111 !important; }
+  .hdr-sub { font-size: 9px !important; color: #555 !important; }
+  .hdr-contact { font-size: 11px !important; color: #111 !important; }
+  .hdr-sheet-num { font-size: 9px !important; color: #888 !important; }
+  .hdr-logo-ph { border-color: #ccc !important; color: #aaa !important; width: 40px !important; height: 40px !important; }
+
+  .puzzles-grid { gap: 10px !important; }
+  .puzzle-card { border: 1px solid #ddd !important; box-shadow: none !important; }
+  .puzzle-card-header { background: #f5f5f0 !important; }
+  .puzzle-num-lbl { color: #444 !important; }
+  .flip-btn { display: none !important; }
+  .turn-bar { font-size: 8px !important; padding: 4px !important; }
+  .turn-bar.white { background: #f0f0f0 !important; color: #111 !important; }
+  .turn-bar.black { background: #1a1a2e !important; color: #fff !important; }
+  .puzzle-card-body { padding: 7px !important; gap: 5px !important; }
+  .field-label { font-size: 7.5px !important; color: #666 !important; }
+  .answer-field { font-size: 10px !important; min-height: 20px !important; padding: 2px !important; border-bottom-color: #333 !important; }
+  .notes-textarea {
+    font-size: 9px !important; line-height: 17px !important;
+    background-image: repeating-linear-gradient(
+      to bottom, transparent 0px, transparent 15px,
+      rgba(0,0,0,0.2) 15px, rgba(0,0,0,0.2) 16px
+    ) !important;
+    background-size: 100% 17px !important;
+  }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<div id="sidebar">
+  <div class="sidebar-header">
+    <div class="brand">
+      <div class="brand-icon">♟</div>
+      <div><div class="brand-name">PuzzleSheet</div></div>
+    </div>
+    <div class="brand-tagline">Chess Worksheet Generator</div>
+  </div>
+
+  <div class="sidebar-body">
+
+    <!-- Branding -->
+    <div class="s-group">
+      <div class="s-field">
+        <div class="s-label">Academy / Title</div>
+        <input type="text" class="s-input" id="ws-title" value="EduChess Academy Puzzle Worksheet"/>
+      </div>
+      <div class="s-field">
+        <div class="s-label">Subtitle</div>
+        <input type="text" class="s-input" id="ws-sub" value="Solve the positions. White or Black to move is shown below each board."/>
+      </div>
+      <div class="s-field">
+        <div class="s-label">Contact / Phone</div>
+        <input type="text" class="s-input" id="ws-contact" value="+91 0000 0000 00"/>
+      </div>
+      <div class="s-field">
+        <div class="s-label">Logo</div>
+        <div class="logo-preview">
+          <img id="logo-thumb" class="logo-thumb"/>
+          <label class="upload-btn" style="flex:1" for="logo-file">
+            <span>↑</span> Upload logo
+          </label>
+          <input type="file" id="logo-file" accept="image/*" style="display:none"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-divider"></div>
+
+    <!-- Source tabs -->
+    <div class="s-group">
+      <div class="s-label">Puzzle source</div>
+      <div class="source-tabs">
+        <button class="source-tab active" id="tab-lichess" onclick="switchTab('lichess')">⚡ Lichess API</button>
+        <button class="source-tab" id="tab-manual" onclick="switchTab('manual')">✎ Manual FENs</button>
+      </div>
+    </div>
+
+    <!-- ── LICHESS PANEL ── -->
+    <div id="panel-lichess" class="s-group">
+
+      <div class="s-field">
+        <div class="s-label">Theme / Tactic</div>
+        <select class="s-input" id="lc-theme">
+          <optgroup label="Checkmate">
+            <option value="mateIn1">Mate in 1</option>
+            <option value="mateIn2">Mate in 2</option>
+            <option value="mateIn3">Mate in 3</option>
+            <option value="backRankMate">Back Rank Mate</option>
+            <option value="smotheredMate">Smothered Mate</option>
+            <option value="anastasiaMate">Anastasia's Mate</option>
+            <option value="arabianMate">Arabian Mate</option>
+          </optgroup>
+          <optgroup label="Tactics">
+            <option value="pin">Pin</option>
+            <option value="fork">Fork</option>
+            <option value="skewer">Skewer</option>
+            <option value="discoveredAttack">Discovered Attack</option>
+            <option value="hangingPiece">Hanging Piece</option>
+            <option value="sacrifice">Sacrifice</option>
+            <option value="deflection">Deflection</option>
+            <option value="interference">Interference</option>
+            <option value="xRayAttack">X-Ray Attack</option>
+            <option value="zwischenzug">Zwischenzug</option>
+          </optgroup>
+          <optgroup label="Phase">
+            <option value="opening">Opening</option>
+            <option value="middlegame">Middlegame</option>
+            <option value="endgame">Endgame</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="attraction">Attraction</option>
+            <option value="clearance">Clearance</option>
+            <option value="kingsideAttack">Kingside Attack</option>
+            <option value="queensideAttack">Queenside Attack</option>
+            <option value="trappedPiece">Trapped Piece</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div>
+        <div class="s-label" style="margin-bottom:8px">Puzzles by difficulty</div>
+        <div class="diff-controls">
+          <div class="diff-row">
+            <div class="diff-color-dot dot-easy"></div>
+            <span class="diff-label">Easy</span>
+            <input type="number" class="diff-num" id="cnt-easy" value="4" min="0" max="30"/>
+            <span style="font-size:10px;color:var(--text-muted)">puzzles</span>
+          </div>
+          <div class="diff-row">
+            <div class="diff-color-dot dot-medium"></div>
+            <span class="diff-label">Medium</span>
+            <input type="number" class="diff-num" id="cnt-med" value="4" min="0" max="30"/>
+            <span style="font-size:10px;color:var(--text-muted)">puzzles</span>
+          </div>
+          <div class="diff-row">
+            <div class="diff-color-dot dot-hard"></div>
+            <span class="diff-label">Hard</span>
+            <input type="number" class="diff-num" id="cnt-hard" value="4" min="0" max="30"/>
+            <span style="font-size:10px;color:var(--text-muted)">puzzles</span>
+          </div>
+          <div class="diff-total" id="diff-total">12 puzzles total → 2 sheets</div>
+        </div>
+      </div>
+
+      <div class="rating-range-display">
+        Easy: 600 – 1200 &nbsp;·&nbsp; Medium: 1200 – 1800 &nbsp;·&nbsp; Hard: 1800 – 2500
+      </div>
+
+      <div class="fetch-progress" id="fetch-progress">
+        <span id="fetch-msg">Fetching puzzles…</span>
+        <div class="fetch-bar-wrap"><div class="fetch-bar" id="fetch-bar" style="width:0%"></div></div>
+      </div>
+
+      <button class="btn btn-outline btn-full" id="fetch-btn" onclick="fetchFromLichess()">
+        ⬇ Fetch from Lichess
+      </button>
+
+    </div><!-- /panel-lichess -->
+
+    <!-- ── MANUAL PANEL ── -->
+    <div id="panel-manual" class="s-group" style="display:none">
+      <div class="s-field">
+        <div class="s-label" style="display:flex;align-items:center;gap:6px">
+          FEN list — one per line
+          <span class="fen-count-badge" id="fen-count">0</span>
+        </div>
+        <textarea class="s-input" id="fen-ta" placeholder="Paste FENs here, one per line…"></textarea>
+      </div>
+      <label class="upload-btn" for="fen-file" id="fen-file-lbl">
+        <span>📄</span> Upload .txt / .pgn file
+      </label>
+      <input type="file" id="fen-file" accept=".txt,.pgn,text/plain" style="display:none"/>
+    </div>
+
+    <div class="s-divider"></div>
+
+    <!-- Puzzle options -->
+    <div class="s-group">
+      <div class="s-inline">
+        <div class="s-field">
+          <div class="s-label">Notes lines</div>
+          <select class="s-input" id="notes-lines-sel">
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+        <div class="s-field">
+          <div class="s-label">Notes label</div>
+          <input type="text" class="s-input" id="notes-label-text" value="Notes / Hint:"/>
+        </div>
+      </div>
+      <div class="s-inline">
+        <div class="s-field">
+          <div class="s-label">Default turn</div>
+          <select class="s-input" id="default-turn">
+            <option value="auto">Auto-detect</option>
+            <option value="w">White</option>
+            <option value="b">Black</option>
+          </select>
+        </div>
+        <div class="s-field">
+          <div class="s-label">Orientation</div>
+          <select class="s-input" id="default-flip">
+            <option value="white">White ↓</option>
+            <option value="black">Black ↓</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar-body -->
+
+  <div class="sidebar-footer">
+    <button class="btn btn-gold btn-full" id="gen-btn">♟ Generate Worksheets</button>
+    <div class="btn-row">
+      <button class="btn btn-outline" id="print-btn" style="flex:2">⎙ Print / Save PDF</button>
+      <button class="btn btn-ghost" id="clear-btn" style="flex:1">Clear</button>
+    </div>
+    <div class="status-hint">
+      Click turn bar to toggle W/B · Click Flip to rotate board · Type notes inline
+    </div>
+  </div>
+</div><!-- /sidebar -->
+
+<!-- ══════════════ MAIN ══════════════ -->
+<div id="main">
+  <div class="main-inner">
+    <div id="nav-wrap"></div>
+    <div id="sheets-wrap"></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ── State ──────────────────────────────────────────────
+let logoUrl = null;
+let allPuzzles = [];      // array of FEN strings
+let allDiffs   = [];      // parallel array: 'easy'|'medium'|'hard'|''
+let turnStates   = [];
+let flipStates   = [];
+let answerStates = [];
+let noteStates   = [];
+let currentTab = 'lichess';
+
+// ── Piece images ───────────────────────────────────────
+const PIECES = {};
+const PIECE_KEYS = ['wK','wQ','wR','wB','wN','wP','bK','bQ','bR','bB','bN','bP'];
+const BASE_URL = 'https://lichess1.org/assets/_CRuecC/piece/cburnett/';
+
+const pieceImagesReady = Promise.all(
+  PIECE_KEYS.map(key => new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload  = () => { PIECES[key] = img; resolve(); };
+    img.onerror = () => resolve();
+    img.src = `${BASE_URL}${key}.svg`;
+  }))
+);
+
+// ── Tab switching ──────────────────────────────────────
+function switchTab(t) {
+  currentTab = t;
+  document.getElementById('panel-lichess').style.display = t === 'lichess' ? 'flex' : 'none';
+  document.getElementById('panel-manual').style.display  = t === 'manual'  ? 'flex' : 'none';
+  if (t === 'lichess') {
+    document.getElementById('panel-lichess').style.flexDirection = 'column';
+    document.getElementById('panel-lichess').style.gap = '10px';
+  }
+  document.getElementById('tab-lichess').classList.toggle('active', t === 'lichess');
+  document.getElementById('tab-manual').classList.toggle('active',  t === 'manual');
+}
+
+// ── Difficulty total display ───────────────────────────
+function updateDiffTotal() {
+  const e = parseInt(document.getElementById('cnt-easy').value)  || 0;
+  const m = parseInt(document.getElementById('cnt-med').value)   || 0;
+  const h = parseInt(document.getElementById('cnt-hard').value)  || 0;
+  const tot = e + m + h;
+  const sheets = Math.max(1, Math.ceil(tot / 6));
+  document.getElementById('diff-total').textContent =
+    `${tot} puzzle${tot !== 1 ? 's' : ''} total → ${sheets} sheet${sheets !== 1 ? 's' : ''}`;
+}
+['cnt-easy','cnt-med','cnt-hard'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updateDiffTotal)
+);
+
+// ── Lichess API fetch ──────────────────────────────────
+const DIFF_RANGES = {
+  easy:   [600,  1200],
+  medium: [1200, 1800],
+  hard:   [1800, 2500],
+};
+
+async function fetchBatch(theme, minRating, maxRating, count) {
+  if (count <= 0) return [];
+  // Lichess puzzle batch API
+  const url = `https://lichess.org/api/puzzle/batch?nb=${count}&themes=${theme}&ratingMin=${minRating}&ratingMax=${maxRating}`;
+  try {
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const data = await res.json();
+    const puzzles = data.puzzles || [];
+    return puzzles.map(p => {
+      // Lichess returns the FEN of the position BEFORE the first move,
+      // so we need to extract the FEN from puzzle.fen (the position to solve)
+      const fen = p.puzzle?.fen || p.fen || '';
+      return fen;
+    }).filter(f => f && f.includes('/'));
+  } catch (e) {
+    console.warn('Lichess fetch failed:', e.message);
+    return [];
+  }
+}
+
+async function fetchFromLichess() {
+  const theme = document.getElementById('lc-theme').value;
+  const cntE  = parseInt(document.getElementById('cnt-easy').value)  || 0;
+  const cntM  = parseInt(document.getElementById('cnt-med').value)   || 0;
+  const cntH  = parseInt(document.getElementById('cnt-hard').value)  || 0;
+  const total = cntE + cntM + cntH;
+
+  if (total === 0) { alert('Please set at least one puzzle count above zero.'); return; }
+
+  const btn      = document.getElementById('fetch-btn');
+  const progress = document.getElementById('fetch-progress');
+  const bar      = document.getElementById('fetch-bar');
+  const msg      = document.getElementById('fetch-msg');
+
+  btn.disabled = true; btn.textContent = '⏳ Fetching…';
+  progress.style.display = 'block';
+  bar.style.width = '5%';
+
+  const fens  = [];
+  const diffs = [];
+
+  // Easy
+  if (cntE > 0) {
+    msg.textContent = `Fetching ${cntE} easy puzzles (rating 600–1200)…`;
+    bar.style.width = '15%';
+    const batch = await fetchBatch(theme, DIFF_RANGES.easy[0], DIFF_RANGES.easy[1], cntE);
+    batch.forEach(f => { fens.push(f); diffs.push('easy'); });
+  }
+  bar.style.width = '40%';
+
+  // Medium
+  if (cntM > 0) {
+    msg.textContent = `Fetching ${cntM} medium puzzles (rating 1200–1800)…`;
+    bar.style.width = '45%';
+    const batch = await fetchBatch(theme, DIFF_RANGES.medium[0], DIFF_RANGES.medium[1], cntM);
+    batch.forEach(f => { fens.push(f); diffs.push('medium'); });
+  }
+  bar.style.width = '70%';
+
+  // Hard
+  if (cntH > 0) {
+    msg.textContent = `Fetching ${cntH} hard puzzles (rating 1800–2500)…`;
+    bar.style.width = '75%';
+    const batch = await fetchBatch(theme, DIFF_RANGES.hard[0], DIFF_RANGES.hard[1], cntH);
+    batch.forEach(f => { fens.push(f); diffs.push('hard'); });
+  }
+  bar.style.width = '100%';
+
+  btn.disabled = false; btn.textContent = '⬇ Fetch from Lichess';
+
+  if (fens.length === 0) {
+    msg.textContent = '⚠ No puzzles returned. Check your network or try different settings.';
+    setTimeout(() => { progress.style.display = 'none'; }, 4000);
+    return;
+  }
+
+  msg.textContent = `✓ Fetched ${fens.length} puzzle${fens.length !== 1 ? 's' : ''} successfully!`;
+  setTimeout(() => { progress.style.display = 'none'; }, 2500);
+
+  allPuzzles = fens;
+  allDiffs   = diffs;
+
+  // Mirror into textarea so user can inspect/copy
+  document.getElementById('fen-ta').value = fens.join('\n');
+  updateCount();
+
+  // Auto-generate worksheets immediately
+  doGenerate();
+}
+
+// ── FEN parser ─────────────────────────────────────────
+function parseFEN(fen) {
+  const p    = fen.trim().split(' ');
+  const rows = p[0].split('/');
+  const turn = p[1] || 'w';
+  const board = [];
+  for (const row of rows) {
+    const r = [];
+    for (const ch of row) {
+      if (/\d/.test(ch)) for (let i = 0; i < +ch; i++) r.push(null);
+      else r.push(ch);
+    }
+    board.push(r);
+  }
+  return { board, turn };
+}
+
+// ── Board renderer ─────────────────────────────────────
+function drawBoard(canvas, fen, flipped) {
+  const sz  = canvas.width;
+  const sq  = sz / 8;
+  const ctx = canvas.getContext('2d');
+  let parsed;
+  try { parsed = parseFEN(fen); } catch(e) { return; }
+  const { board } = parsed;
+
+  const LSQ = '#f0ece0', DSQ = '#8ca2ad';
+
+  ctx.clearRect(0, 0, sz, sz);
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    ctx.fillStyle = (r + c) % 2 === 0 ? LSQ : DSQ;
+    ctx.fillRect(c * sq, r * sq, sq, sq);
+  }
+
+  const labelSz = Math.round(sq * 0.175);
+  ctx.font = `bold ${labelSz}px sans-serif`;
+
+  for (let c = 0; c < 8; c++) {
+    const lbl = flipped ? 'hgfedcba'[c] : 'abcdefgh'[c];
+    ctx.fillStyle = c % 2 === 0 ? DSQ : LSQ;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText(lbl, c * sq + sq * 0.05, sz - sz * 0.005);
+  }
+  for (let r = 0; r < 8; r++) {
+    const lbl = String(flipped ? r + 1 : 8 - r);
+    ctx.fillStyle = r % 2 === 0 ? LSQ : DSQ;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText(lbl, sz - sz * 0.005, r * sq + sq * 0.04);
+  }
+
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const br    = flipped ? 7 - r : r;
+    const bc    = flipped ? 7 - c : c;
+    const piece = board[br][bc];
+    if (!piece) continue;
+    const isW = piece === piece.toUpperCase();
+    const key = (isW ? 'w' : 'b') + piece.toUpperCase();
+    const img = PIECES[key];
+    if (img) ctx.drawImage(img, c * sq, r * sq, sq, sq);
+  }
+}
+
+// ── Empty state ────────────────────────────────────────
+function buildEmptyState(wrap) {
+  wrap.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-board" id="empty-board-grid"></div>
+      <div class="empty-title">No puzzles yet</div>
+      <div class="empty-sub">Fetch puzzles from Lichess or paste FENs in the sidebar, then click <strong>Generate Worksheets</strong></div>
+    </div>`;
+  const grid = document.getElementById('empty-board-grid');
+  if (!grid) return;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const sq = document.createElement('div');
+    sq.className = 'empty-board-sq';
+    sq.style.background = (r + c) % 2 === 0 ? '#dee3e6' : '#8ca2ad';
+    grid.appendChild(sq);
+  }
+}
+
+// ── Build worksheets ───────────────────────────────────
+function buildUI() {
+  const wrap    = document.getElementById('sheets-wrap');
+  const navWrap = document.getElementById('nav-wrap');
+  wrap.innerHTML = ''; navWrap.innerHTML = '';
+
+  if (!allPuzzles.length) { buildEmptyState(wrap); return; }
+
+  const notesCount    = parseInt(document.getElementById('notes-lines-sel').value) || 3;
+  const notesLabelTxt = document.getElementById('notes-label-text').value || 'Notes / Hint:';
+  const notesHeight   = notesCount * 20 + 4;
+
+  // Split into pages of 6
+  const pages = [];
+  for (let i = 0; i < allPuzzles.length; i += 6)
+    pages.push(allPuzzles.slice(i, i + 6).map((_, j) => i + j));
+
+  // Tab nav
+  const nav = document.createElement('div');
+  nav.className = 'sheet-nav'; nav.id = 'print-nav';
+
+  pages.forEach((_, pi) => {
+    const t = document.createElement('button');
+    t.className = 'sheet-tab' + (pi === 0 ? ' active' : '');
+    t.textContent = `Sheet ${pi + 1}`;
+    t.onclick = () => {
+      document.querySelectorAll('.sheet-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.querySelectorAll('.worksheet-page').forEach((pg, pgi) => {
+        pg.style.display = pgi === pi ? 'block' : 'none';
+      });
+    };
+    nav.appendChild(t);
+  });
+
+  const pb = document.createElement('button');
+  pb.className = 'nav-print-btn';
+  pb.innerHTML = '⎙ Print all';
+  pb.onclick = () => {
+    document.querySelectorAll('.worksheet-page').forEach(p => p.style.display = 'block');
+    window.print();
+  };
+  nav.appendChild(pb);
+  navWrap.appendChild(nav);
+
+  // Build each page
+  pages.forEach((idxArr, pi) => {
+    const page = document.createElement('div');
+    page.className = 'worksheet-page';
+    page.style.display = pi === 0 ? 'block' : 'none';
+
+    // ── Header ──
+    const hdr = document.createElement('div'); hdr.className = 'page-header';
+
+    const logoBlock = document.createElement('div');
+    if (logoUrl) {
+      const img = document.createElement('img');
+      img.className = 'hdr-logo'; img.style.display = 'block'; img.src = logoUrl;
+      logoBlock.appendChild(img);
+    } else {
+      const ph = document.createElement('div'); ph.className = 'hdr-logo-ph'; ph.textContent = 'LOGO';
+      logoBlock.appendChild(ph);
+    }
+    hdr.appendChild(logoBlock);
+
+    const hc = document.createElement('div'); hc.className = 'hdr-center';
+    const ht = document.createElement('div'); ht.className = 'hdr-title';
+    ht.textContent = document.getElementById('ws-title').value || 'Chess Worksheet';
+    const hs = document.createElement('div'); hs.className = 'hdr-sub';
+    hs.textContent = document.getElementById('ws-sub').value;
+    hc.appendChild(ht); hc.appendChild(hs); hdr.appendChild(hc);
+
+    const hr2 = document.createElement('div'); hr2.className = 'hdr-right';
+    const hct = document.createElement('div'); hct.className = 'hdr-contact';
+    hct.textContent = document.getElementById('ws-contact').value;
+    const hsh = document.createElement('div'); hsh.className = 'hdr-sheet-num';
+    hsh.textContent = `Sheet ${pi + 1} of ${pages.length}`;
+    hr2.appendChild(hct); hr2.appendChild(hsh); hdr.appendChild(hr2);
+    page.appendChild(hdr);
+
+    // ── Puzzle grid ──
+    const grid = document.createElement('div'); grid.className = 'puzzles-grid';
+
+    idxArr.forEach(gi => {
+      const fen  = allPuzzles[gi];
+      const diff = allDiffs[gi] || '';
+
+      const cell = document.createElement('div'); cell.className = 'puzzle-card';
+
+      // Card header
+      const cardHdr = document.createElement('div'); cardHdr.className = 'puzzle-card-header';
+      const pnl = document.createElement('div'); pnl.className = 'puzzle-num-lbl';
+      pnl.textContent = `Puzzle ${gi + 1}`;
+      const rhs = document.createElement('div'); rhs.className = 'puzzle-card-header-right';
+      if (diff) {
+        const badge = document.createElement('span');
+        badge.className = `diff-badge diff-${diff}`;
+        badge.textContent = diff;
+        rhs.appendChild(badge);
+      }
+      const flipBtn = document.createElement('button'); flipBtn.className = 'flip-btn';
+      flipBtn.textContent = '⇅ Flip';
+      rhs.appendChild(flipBtn);
+      cardHdr.appendChild(pnl); cardHdr.appendChild(rhs);
+      cell.appendChild(cardHdr);
+
+      // Board
+      const bw  = document.createElement('div'); bw.className = 'board-wrap';
+      const cvs = document.createElement('canvas'); cvs.className = 'brd';
+      cvs.width = 480; cvs.height = 480;
+      bw.appendChild(cvs); cell.appendChild(bw);
+
+      // Turn bar
+      const tb = document.createElement('div'); tb.className = 'turn-bar';
+      const t = turnStates[gi];
+      tb.classList.add(t === 'w' ? 'white' : 'black');
+      tb.textContent = t === 'w' ? 'WHITE TO MOVE' : 'BLACK TO MOVE';
+      tb.onclick = () => {
+        turnStates[gi] = turnStates[gi] === 'w' ? 'b' : 'w';
+        tb.classList.toggle('white'); tb.classList.toggle('black');
+        tb.textContent = turnStates[gi] === 'w' ? 'WHITE TO MOVE' : 'BLACK TO MOVE';
+      };
+      cell.appendChild(tb);
+
+      // Card body
+      const body = document.createElement('div'); body.className = 'puzzle-card-body';
+
+      // Answer field
+      const ansRow = document.createElement('div'); ansRow.className = 'answer-row';
+      const ansLbl = document.createElement('span'); ansLbl.className = 'field-label'; ansLbl.textContent = 'Answer:';
+      const ansField = document.createElement('input');
+      ansField.type = 'text'; ansField.className = 'answer-field';
+      ansField.value = answerStates[gi] || '';
+      ansField.addEventListener('input', () => { answerStates[gi] = ansField.value; });
+      ansRow.appendChild(ansLbl); ansRow.appendChild(ansField);
+      body.appendChild(ansRow);
+
+      // Notes
+      const notesSection = document.createElement('div'); notesSection.className = 'notes-section';
+      const notesLbl = document.createElement('span'); notesLbl.className = 'field-label';
+      notesLbl.textContent = notesLabelTxt;
+      notesSection.appendChild(notesLbl);
+      const ta = document.createElement('textarea'); ta.className = 'notes-textarea';
+      ta.style.height = notesHeight + 'px';
+      ta.value = noteStates[gi] || '';
+      ta.addEventListener('input', () => { noteStates[gi] = ta.value; });
+      notesSection.appendChild(ta);
+      body.appendChild(notesSection);
+
+      cell.appendChild(body);
+      grid.appendChild(cell);
+
+      // Flip handler
+      flipBtn.onclick = () => {
+        flipStates[gi] = !flipStates[gi];
+        drawBoard(cvs, fen, flipStates[gi]);
+        const on = flipStates[gi];
+        flipBtn.style.color       = on ? '#8a6c2a' : '';
+        flipBtn.style.borderColor = on ? '#8a6c2a' : '';
+        flipBtn.style.background  = on ? '#f9f3e5' : '';
+      };
+
+      // Draw board once pieces loaded
+      pieceImagesReady.then(() => drawBoard(cvs, fen, flipStates[gi]));
+    });
+
+    page.appendChild(grid);
+    wrap.appendChild(page);
+  });
+}
+
+// ── Generate (shared) ──────────────────────────────────
+function doGenerate() {
+  const defTurn = document.getElementById('default-turn').value;
+  const defFlip = document.getElementById('default-flip').value === 'black';
+  turnStates   = allPuzzles.map(fen => {
+    if (defTurn === 'auto') { const p = fen.split(' '); return p[1] || 'w'; }
+    return defTurn;
+  });
+  flipStates   = allPuzzles.map(() => defFlip);
+  answerStates = allPuzzles.map((_, i) => answerStates[i] || '');
+  noteStates   = allPuzzles.map((_, i) => noteStates[i]   || '');
+  buildUI();
+}
+
+// ── Helpers ────────────────────────────────────────────
+function updateCount() {
+  const lines = document.getElementById('fen-ta').value
+    .split('\n').map(l => l.trim()).filter(l => l.length > 10 && l.includes('/'));
+  document.getElementById('fen-count').textContent = lines.length;
+}
+
+// ── Live header updates ────────────────────────────────
+document.getElementById('fen-ta').addEventListener('input', updateCount);
+document.getElementById('ws-title').addEventListener('input', () => {
+  document.querySelectorAll('.hdr-title').forEach(e =>
+    e.textContent = document.getElementById('ws-title').value || 'Chess Worksheet');
+});
+document.getElementById('ws-sub').addEventListener('input', () => {
+  document.querySelectorAll('.hdr-sub').forEach(e =>
+    e.textContent = document.getElementById('ws-sub').value);
+});
+document.getElementById('ws-contact').addEventListener('input', () => {
+  document.querySelectorAll('.hdr-contact').forEach(e =>
+    e.textContent = document.getElementById('ws-contact').value);
+});
+
+// ── Generate button ────────────────────────────────────
+document.getElementById('gen-btn').addEventListener('click', () => {
+  if (currentTab === 'manual') {
+    const lines = document.getElementById('fen-ta').value
+      .split('\n').map(l => l.trim()).filter(l => l.length > 10 && l.includes('/'));
+    allPuzzles = lines;
+    allDiffs   = lines.map(() => '');
+  }
+  // If lichess tab and no puzzles yet, prompt user
+  if (currentTab === 'lichess' && allPuzzles.length === 0) {
+    alert('Click "Fetch from Lichess" first to load puzzles.');
+    return;
+  }
+  doGenerate();
+});
+
+// ── Print ──────────────────────────────────────────────
+document.getElementById('print-btn').addEventListener('click', () => {
+  document.querySelectorAll('.worksheet-page').forEach(p => p.style.display = 'block');
+  window.print();
+});
+
+// ── Clear ──────────────────────────────────────────────
+document.getElementById('clear-btn').addEventListener('click', () => {
+  document.getElementById('fen-ta').value = '';
+  allPuzzles = []; allDiffs = []; turnStates = []; flipStates = []; answerStates = []; noteStates = [];
+  updateCount(); updateDiffTotal();
+  buildEmptyState(document.getElementById('sheets-wrap'));
+  document.getElementById('nav-wrap').innerHTML = '';
+  document.getElementById('fetch-progress').style.display = 'none';
+});
+
+// ── File upload ────────────────────────────────────────
+document.getElementById('fen-file').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const lbl = document.getElementById('fen-file-lbl');
+  lbl.innerHTML = '<span>⏳</span> Loading…';
+  const r = new FileReader();
+  r.onload = ev => {
+    const text = ev.target.result;
+    const existing = document.getElementById('fen-ta').value.trim();
+    const newLines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 10 && l.includes('/'));
+    const merged = existing ? existing + '\n' + newLines.join('\n') : newLines.join('\n');
+    document.getElementById('fen-ta').value = merged;
+    updateCount();
+    lbl.innerHTML = `<span>✅</span> ${newLines.length} FENs from ${f.name}`;
+    setTimeout(() => { lbl.innerHTML = '<span>📄</span> Upload .txt / .pgn file'; }, 3000);
+    e.target.value = '';
+  };
+  r.onerror = () => { lbl.innerHTML = '<span>❌</span> Failed to read file'; };
+  r.readAsText(f);
+});
+
+// ── Logo upload ────────────────────────────────────────
+document.getElementById('logo-file').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    logoUrl = ev.target.result;
+    const th = document.getElementById('logo-thumb');
+    th.src = logoUrl; th.style.display = 'block';
+  };
+  r.readAsDataURL(f);
+});
+
+// ── Init ───────────────────────────────────────────────
+switchTab('lichess');
+updateDiffTotal();
+buildEmptyState(document.getElementById('sheets-wrap'));
+</script>
+</body>
+</html>
