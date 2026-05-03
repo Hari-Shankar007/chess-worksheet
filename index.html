@@ -709,11 +709,8 @@ function getFenFromPgn(pgn, ply) {
 async function fetchBatch(theme, minRating, maxRating, count) {
   if (count <= 0) return [];
   // Lichess puzzle batch API
-  // Fetch puzzles one at a time via /next (no auth needed), with CORS proxy
-  const PROXY = 'https://corsproxy.io/?url=';
-  const results = [];
-  let attempts = 0;
-  const maxAttempts = count * 15;
+  // Lichess puzzle batch API with OAuth token
+  const LICHESS_TOKEN = 'lip_QtpB4gcmGicMzmvnkf4V';
   // Theme map: UI value -> Lichess theme key
   const THEME_MAP = {
     'mateIn1': 'mateIn1', 'mateIn2': 'mateIn2', 'mateIn3': 'mateIn3',
@@ -730,29 +727,29 @@ async function fetchBatch(theme, minRating, maxRating, count) {
     'trappedPiece': 'trappedPiece'
   };
   const lichessTheme = THEME_MAP[theme] || theme;
-  while (results.length < count && attempts < maxAttempts) {
-    attempts++;
-    try {
-      const apiUrl = 'https://lichess.org/api/puzzle/next';
-      const res = await fetch(PROXY + encodeURIComponent(apiUrl));
-      if (!res.ok) { await new Promise(r => setTimeout(r, 300)); continue; }
-      const data = await res.json();
-      const p = data.puzzle;
-      if (!p) continue;
-      // Filter by rating range
-      if (p.rating < minRating || p.rating > maxRating) continue;
-      // Filter by theme (client-side since API ignores theme without auth)
-      if (lichessTheme && !p.themes.includes(lichessTheme)) continue;
-      // Get FEN: apply initialPly moves from PGN using chess.js
-      const fen = getFenFromPgn(data.game.pgn, p.initialPly);
-      if (!fen || !fen.includes('/')) continue;
-      results.push(fen);
-    } catch(e) {
-      console.warn('Fetch error:', e.message);
-      await new Promise(r => setTimeout(r, 300));
-    }
+  try {
+    let url = `https://lichess.org/api/puzzle/batch?nb=${count}`;
+    if (lichessTheme) url += `&themes=${lichessTheme}`;
+    if (minRating) url += `&ratingMin=${minRating}`;
+    if (maxRating) url += `&ratingMax=${maxRating}`;
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${LICHESS_TOKEN}`,
+        'Accept': 'application/json'
+      }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const data = await res.json();
+    const puzzles = data.puzzles || [];
+    return puzzles.map(p => {
+      const fen = getFenFromPgn(p.game.pgn, p.puzzle.initialPly);
+      return fen || '';
+    }).filter(f => f && f.includes('/'));
+  } catch(e) {
+    console.warn('Lichess fetch failed:', e.message);
+    return [];
   }
-  return results;
+
 async function fetchFromLichess() {
   const theme = document.getElementById('lc-theme').value;
   const cntE  = parseInt(document.getElementById('cnt-easy').value)  || 0;
